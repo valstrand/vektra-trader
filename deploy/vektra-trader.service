@@ -1,0 +1,12 @@
+[Unit]
+Description=Vektra Trader - en agentsyklus
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/vektra-trader
+ExecStart=/root/.local/bin/uv run python -m agent.main
+# Kjør heller som egen bruker hvis du har det:
+# User=trader
+TimeoutStartSec=300

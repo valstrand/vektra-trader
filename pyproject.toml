@@ -1,0 +1,22 @@
+[project]
+name = "vektra-trader"
+version = "0.1.0"
+description = "Autonom LLM-basert tradingagent mot Bitfinex"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "anthropic>=0.40",
+    "ccxt>=4.5",
+    "supabase>=2.10",
+    "python-dotenv>=1.0",
+    "pydantic>=2.9",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.8",
+]
+
+[tool.ruff]
+line-length = 100
