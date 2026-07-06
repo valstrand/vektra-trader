@@ -1,5 +1,5 @@
 """Supabase: config, beslutningslogg, snapshots."""
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 
 from supabase import create_client
 

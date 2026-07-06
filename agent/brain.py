@@ -17,7 +17,7 @@ ANALYST_SCHEMA = {
         "pair": {"type": ["string", "null"], "description": "F.eks. BTC/USD. null ved hold."},
         "amount_usd": {"type": ["number", "null"]},
         "reasoning": {"type": "string"},
-        "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+        "confidence": {"type": "number", "description": "Mellom 0 og 1."},
         "lesson": {"type": "string", "description": "Hva jeg ser etter neste gang."},
     },
     "required": ["action", "pair", "amount_usd", "reasoning", "confidence", "lesson"],
