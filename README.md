@@ -37,9 +37,28 @@ systemd timer (hvert 15. min, Hetzner)
 ### 3. Lokalt (Cursor / Claude Code)
 ```bash
 git clone <ditt-repo> && cd vektra-trader
-cp .env.example .env        # fyll inn nøkler
+# opprett .env med nøklene dine (se «Miljøvariabler» under)
 uv sync                     # installerer alt fra pyproject.toml
 uv run python -m agent.main --dry-run   # full syklus uten ordre
+```
+
+#### Miljøvariabler (`.env`)
+Opprett en `.env`-fil i prosjektroten (den er gitignored — commit den aldri):
+```dotenv
+# Bitfinex — nøkkel fra PAPER TRADING sub-kontoen.
+# Rettigheter: read + orders. ALDRI withdraw.
+BITFINEX_API_KEY=
+BITFINEX_API_SECRET=
+
+# Anthropic
+ANTHROPIC_API_KEY=
+
+# Supabase (service role — agenten skriver til databasen)
+SUPABASE_URL=
+SUPABASE_SERVICE_ROLE_KEY=
+
+# Miljø: "paper" eller "live" — kun til merking i loggene
+TRADING_ENV=paper
 ```
 
 ### 4. Hetzner
@@ -47,7 +66,8 @@ uv run python -m agent.main --dry-run   # full syklus uten ordre
 # på serveren
 curl -LsSf https://astral.sh/uv/install.sh | sh
 git clone <ditt-repo> /opt/vektra-trader
-cd /opt/vektra-trader && cp .env.example .env  # fyll inn nøkler
+cd /opt/vektra-trader
+# opprett .env med nøklene dine (se «Miljøvariabler» over)
 uv sync
 uv run python -m agent.main --dry-run          # verifiser
 
