@@ -5,8 +5,12 @@ Wants=network-online.target
 
 [Service]
 Type=oneshot
+User=trader
+Group=trader
 WorkingDirectory=/opt/vektra-trader
-ExecStart=/root/.local/bin/uv run python -m agent.main
-# Kjør heller som egen bruker hvis du har det:
-# User=trader
+# .env lastes uansett av python-dotenv (config.py); EnvironmentFile gjør den
+# eksplisitt for systemd. Krever at .env kun har KEY=value-linjer (ingen
+# etterstilte # kommentarer på samme linje).
+EnvironmentFile=/opt/vektra-trader/.env
+ExecStart=/home/trader/.local/bin/uv run python -m agent.main
 TimeoutStartSec=300
