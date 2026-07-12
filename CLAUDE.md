@@ -33,5 +33,6 @@ Supabase er hukommelse og styringsflate, systemd-timer på Hetzner kjører det.
 
 ## Videre arbeid (roadmap)
 - [ ] Dashboard (Next.js på Vercel) — se docs/DASHBOARD.md
-- [ ] Lærer-rollen: ukentlig refleksjon → reflections-tabellen
+- [x] Lærer-rollen: ukentlig refleksjon → reflections-tabellen
+      (`agent/teacher.py`, kjøres av vektra-trader-teacher.timer)
 - [ ] Daglig oppsummering på norsk (Slack/e-post)

@@ -1,5 +1,5 @@
 """Supabase: config, beslutningslogg, snapshots."""
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from supabase import create_client
 
@@ -58,4 +58,43 @@ def log_decision(row: dict) -> None:
 def log_snapshot(total_usd: float, balances: dict) -> None:
     sb.table("snapshots").insert(
         {"env": config.TRADING_ENV, "total_usd": total_usd, "balances": balances}
+    ).execute()
+
+
+# --- Lærer-rollen ---
+
+
+def _since_iso(days: int) -> str:
+    return (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
+
+
+def decisions_since(days: int) -> list[dict]:
+    return (
+        sb.table("decisions")
+        .select("*")
+        .gte("created_at", _since_iso(days))
+        .order("created_at")
+        .execute()
+        .data
+    )
+
+
+def snapshots_since(days: int) -> list[dict]:
+    return (
+        sb.table("snapshots")
+        .select("created_at, total_usd")
+        .gte("created_at", _since_iso(days))
+        .order("created_at")
+        .execute()
+        .data
+    )
+
+
+def log_reflection(period_days: int, content: str, suggested_changes: str | None) -> None:
+    sb.table("reflections").insert(
+        {
+            "period_days": period_days,
+            "content": content,
+            "suggested_strategy_changes": suggested_changes,
+        }
     ).execute()

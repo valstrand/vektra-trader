@@ -87,6 +87,24 @@ Alt styres fra `config`-tabellen i Supabase (eller dashboardet senere):
 - `cycle_hours`         → hvor ofte agenten tar beslutning
 - `max_position_pct`, `max_trades_per_day`, `allowed_pairs` → risikorammer
 
+## Lærer-rollen (ukentlig refleksjon)
+Leser beslutningsloggen + P&L for perioden og skriver en ærlig refleksjon til
+`reflections`-tabellen, med maks 1–2 forslag til endringer i `strategi.md`. Den
+**endrer aldri strategien selv** — du vurderer forslagene og committer manuelt.
+
+```bash
+uv run python -m agent.teacher --dry-run   # skriv ikke til Supabase
+uv run python -m agent.teacher             # siste 7 dager, lagrer
+uv run python -m agent.teacher --days 14
+```
+
+Automatisk hver mandag (som root, samme mønster som hovedtimeren):
+```bash
+cp deploy/vektra-trader-teacher.{service,timer} /etc/systemd/system/
+systemctl daemon-reload
+systemctl enable --now vektra-trader-teacher.timer
+```
+
 ## Struktur
 ```
 agent/       Python-koden (main, exchange, brain, risk, db, config)

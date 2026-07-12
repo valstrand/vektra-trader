@@ -1,0 +1,13 @@
+[Unit]
+Description=Vektra Trader - ukentlig lærer-refleksjon
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=trader
+Group=trader
+WorkingDirectory=/opt/vektra-trader
+EnvironmentFile=/opt/vektra-trader/.env
+ExecStart=/home/trader/.local/bin/uv run python -m agent.teacher
+TimeoutStartSec=300

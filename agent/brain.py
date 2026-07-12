@@ -34,15 +34,31 @@ RISK_SCHEMA = {
     "required": ["verdict", "adjusted_amount_usd", "reasoning"],
 }
 
+REFLECTION_SCHEMA = {
+    "type": "object",
+    "additionalProperties": False,
+    "properties": {
+        "content": {
+            "type": "string",
+            "description": "Ærlig refleksjon på norsk: hva gikk bra/dårlig, dyktighet vs flaks, mønstre.",
+        },
+        "suggested_strategy_changes": {
+            "type": ["string", "null"],
+            "description": "Maks 1–2 konkrete endringer i strategi.md, som limbar tekst. null hvis ingen.",
+        },
+    },
+    "required": ["content", "suggested_strategy_changes"],
+}
+
 
 def _prompt(name: str) -> str:
     return (PROMPTS / name).read_text(encoding="utf-8")
 
 
-def _call(system: str, user: str, schema: dict) -> dict:
+def _call(system: str, user: str, schema: dict, max_tokens: int = 1500) -> dict:
     msg = client.messages.create(
         model=config.CLAUDE_MODEL,
-        max_tokens=1500,
+        max_tokens=max_tokens,
         system=system,
         messages=[{"role": "user", "content": user}],
         output_config={"format": {"type": "json_schema", "schema": schema}},
@@ -63,3 +79,8 @@ def risk_officer(proposal: dict, portfolio_context: str) -> dict:
         f"PORTEFØLJE OG RAMMER:\n{portfolio_context}"
     )
     return _call(system, user, RISK_SCHEMA)
+
+
+def teacher(review_context: str) -> dict:
+    system = _prompt("strategi.md") + "\n\n" + _prompt("laerer.md")
+    return _call(system, review_context, REFLECTION_SCHEMA, max_tokens=2500)
