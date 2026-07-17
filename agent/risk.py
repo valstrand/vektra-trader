@@ -27,15 +27,16 @@ def check(
     if amount_usd < cfg["min_order_usd"]:
         return False, f"ordre ({amount_usd:.2f} USD) under minimum ({cfg['min_order_usd']})"
 
-    # Posisjonstaket gjelder KUN kjøp — det begrenser hvor mye vi legger inn i
-    # én posisjon. Et salg reduserer eksponering og skal aldri stoppes av dette
-    # (ellers blir en posisjon større enn taket umulig å eksitere).
+    # Kjøp-spesifikke tak: posisjonsstørrelse og dagskvote. Begge gjelder KUN
+    # kjøp. Et salg reduserer eksponering og skal aldri stoppes av dem — ellers
+    # blir en posisjon større enn taket umulig å eksitere, og en tvungen exit
+    # kan blokkeres av aktivitetsgrensen. Børsen avviser uansett oversalg.
     if action == "buy":
         max_usd = total_usd * cfg["max_position_pct"] / 100
         if amount_usd > max_usd:
             return False, f"ordre ({amount_usd:.2f} USD) over maks {cfg['max_position_pct']}% ({max_usd:.2f} USD)"
 
-    if trades_today >= cfg["max_trades_per_day"]:
-        return False, f"dagens kvote brukt opp ({trades_today}/{cfg['max_trades_per_day']})"
+        if trades_today >= cfg["max_trades_per_day"]:
+            return False, f"dagens kvote brukt opp ({trades_today}/{cfg['max_trades_per_day']})"
 
     return True, "godkjent av harde sjekker"
