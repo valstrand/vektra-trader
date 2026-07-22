@@ -35,8 +35,11 @@ create table if not exists snapshots (
   created_at  timestamptz not null default now(),
   env         text not null default 'paper',
   total_usd   numeric not null,
-  balances    jsonb not null                            -- {"BTC": 0.001, "USD": 120, ...}
+  balances    jsonb not null,                           -- råmengder: {"BTC": 0.001, "USD": 120, ...}
+  values      jsonb                                     -- USD-verdi per valuta: {"BTC": 63.2, "USD": 120, ...} (nullbar; gamle rader mangler den)
 );
+-- Migrering for eksisterende snapshots-tabeller:
+alter table snapshots add column if not exists values jsonb;
 
 create table if not exists reflections (
   id          bigint generated always as identity primary key,

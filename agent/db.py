@@ -55,9 +55,15 @@ def log_decision(row: dict) -> None:
     sb.table("decisions").insert(row).execute()
 
 
-def log_snapshot(total_usd: float, balances: dict) -> None:
+def log_snapshot(total_usd: float, balances: dict, values: dict | None = None) -> None:
+    """balances = råmengder per valuta; values = USD-verdi per valuta (nullbar)."""
     sb.table("snapshots").insert(
-        {"env": config.TRADING_ENV, "total_usd": total_usd, "balances": balances}
+        {
+            "env": config.TRADING_ENV,
+            "total_usd": total_usd,
+            "balances": balances,
+            "values": values,
+        }
     ).execute()
 
 

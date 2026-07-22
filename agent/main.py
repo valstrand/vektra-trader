@@ -13,7 +13,7 @@ from datetime import datetime, timezone
 from agent import brain, db, exchange, risk
 
 
-def build_market_context(cfg: dict) -> tuple[str, float, dict]:
+def build_market_context(cfg: dict) -> tuple[str, float, dict, dict]:
     bals = exchange.balances()
     total_usd, values = exchange.portfolio_usd(bals)
 
@@ -33,7 +33,7 @@ def build_market_context(cfg: dict) -> tuple[str, float, dict]:
 
     recent = db.recent_decisions(10)
     lines += ["", "DINE SISTE BESLUTNINGER (nyeste først):", json.dumps(recent, ensure_ascii=False)]
-    return "\n".join(lines), total_usd, bals
+    return "\n".join(lines), total_usd, bals, values
 
 
 def run(dry_run: bool = False) -> None:
@@ -50,8 +50,8 @@ def run(dry_run: bool = False) -> None:
             print(f"kun {hours_since:.1f}t siden forrige syklus (< {cfg['cycle_hours']}t) — venter")
             return
 
-    context, total_usd, bals = build_market_context(cfg)
-    db.log_snapshot(total_usd, bals)
+    context, total_usd, bals, values = build_market_context(cfg)
+    db.log_snapshot(total_usd, bals, values)
 
     proposal = brain.analyst(context)
     print("ANALYTIKER:", json.dumps(proposal, ensure_ascii=False))
