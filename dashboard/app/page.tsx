@@ -1,7 +1,7 @@
 import { readClient } from "@/lib/supabase/server";
 import type { Snapshot, TraderConfig } from "@/lib/types";
 import { cashOf, investedOf, assetBreakdown, pnl } from "@/lib/money";
-import { fmtUsd, fmtPct, fmtRelative } from "@/lib/format";
+import { fmtUsd, fmtPct, fmtRelative, sinceIso } from "@/lib/format";
 import { StatTile } from "@/components/money/StatTile";
 import { PnlChart } from "@/components/charts/PnlChart";
 import { PortfolioDonut } from "@/components/charts/PortfolioDonut";
@@ -26,8 +26,7 @@ export default async function MoneyPage(props: PageProps<"/">) {
     .select("id, created_at, total_usd, values, balances, env")
     .order("created_at", { ascending: true });
   if (days !== null) {
-    const since = new Date(Date.now() - days * 86400000).toISOString();
-    series = series.gte("created_at", since);
+    series = series.gte("created_at", sinceIso(days));
   }
 
   const [{ data: snaps }, { data: cfg }] = await Promise.all([

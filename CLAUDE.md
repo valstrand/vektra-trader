@@ -32,7 +32,13 @@ Supabase er hukommelse og styringsflate, systemd-timer på Hetzner kjører det.
   seedes av schema.sql.
 
 ## Videre arbeid (roadmap)
-- [ ] Dashboard (Next.js på Vercel) — se docs/DASHBOARD.md
+- [x] Dashboard (Next.js PWA på Vercel) — se `dashboard/` og docs/DASHBOARD.md
 - [x] Lærer-rollen: ukentlig refleksjon → reflections-tabellen
       (`agent/teacher.py`, kjøres av vektra-trader-teacher.timer)
 - [ ] Daglig oppsummering på norsk (Slack/e-post)
+
+## Dashboard (dashboard/)
+Next.js 16 PWA. Egen sub-app, deployes på Vercel (root directory = dashboard/),
+deler kun Supabase. Leser via anon-nøkkel (RLS read-only); admin skriver til
+trader_config via service role i server actions (aldri i klienten). Se
+dashboard/README.md. NB: penge-siden bruker snapshots.values (per-asset USD).

@@ -1,5 +1,10 @@
 // Norsk (nb-NO) formattering av tall, valuta og dato.
 
+// ISO-tidspunkt N dager tilbake (i egen modul så React Compiler-linten ikke
+// klager på Date.now() i en komponentkropp).
+export const sinceIso = (days: number) =>
+  new Date(Date.now() - days * 86400000).toISOString();
+
 const usd = new Intl.NumberFormat("nb-NO", {
   style: "currency",
   currency: "USD",
