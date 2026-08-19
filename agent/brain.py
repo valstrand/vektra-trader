@@ -55,6 +55,13 @@ def _prompt(name: str) -> str:
     return (PROMPTS / name).read_text(encoding="utf-8")
 
 
+def _strategy_text(strategy: str) -> str:
+    """'default' → prompts/strategi.md (produksjon); ellers prompts/strategies/<navn>.md."""
+    if strategy in ("default", "strategi", ""):
+        return _prompt("strategi.md")
+    return (PROMPTS / "strategies" / f"{strategy}.md").read_text(encoding="utf-8")
+
+
 def _call(system: str, user: str, schema: dict, max_tokens: int = 1500) -> dict:
     msg = client.messages.create(
         model=config.CLAUDE_MODEL,
@@ -67,13 +74,13 @@ def _call(system: str, user: str, schema: dict, max_tokens: int = 1500) -> dict:
     return json.loads(text)
 
 
-def analyst(market_context: str) -> dict:
-    system = _prompt("strategi.md") + "\n\n" + _prompt("analytiker.md")
+def analyst(market_context: str, strategy: str = "default") -> dict:
+    system = _strategy_text(strategy) + "\n\n" + _prompt("analytiker.md")
     return _call(system, market_context, ANALYST_SCHEMA)
 
 
-def risk_officer(proposal: dict, portfolio_context: str) -> dict:
-    system = _prompt("strategi.md") + "\n\n" + _prompt("risikosjef.md")
+def risk_officer(proposal: dict, portfolio_context: str, strategy: str = "default") -> dict:
+    system = _strategy_text(strategy) + "\n\n" + _prompt("risikosjef.md")
     user = (
         f"ANALYTIKERENS FORSLAG:\n{json.dumps(proposal, ensure_ascii=False, indent=2)}\n\n"
         f"PORTEFØLJE OG RAMMER:\n{portfolio_context}"
