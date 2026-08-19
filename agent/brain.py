@@ -63,15 +63,23 @@ def _strategy_text(strategy: str) -> str:
 
 
 def _call(system: str, user: str, schema: dict, max_tokens: int = 1500) -> dict:
-    msg = client.messages.create(
-        model=config.CLAUDE_MODEL,
-        max_tokens=max_tokens,
-        system=system,
-        messages=[{"role": "user", "content": user}],
-        output_config={"format": {"type": "json_schema", "schema": schema}},
-    )
-    text = next(b.text for b in msg.content if b.type == "text")
-    return json.loads(text)
+    # Strukturert output er nesten alltid gyldig JSON, men et sjeldent malformert
+    # svar skal ikke krasje en syklus (prod) eller en lang backtest. Prøv på nytt.
+    last_err: Exception | None = None
+    for _ in range(3):
+        msg = client.messages.create(
+            model=config.CLAUDE_MODEL,
+            max_tokens=max_tokens,
+            system=system,
+            messages=[{"role": "user", "content": user}],
+            output_config={"format": {"type": "json_schema", "schema": schema}},
+        )
+        text = next(b.text for b in msg.content if b.type == "text")
+        try:
+            return json.loads(text)
+        except json.JSONDecodeError as e:
+            last_err = e
+    raise last_err  # type: ignore[misc]
 
 
 def analyst(market_context: str, strategy: str = "default") -> dict:

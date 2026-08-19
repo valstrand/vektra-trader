@@ -122,12 +122,18 @@ def run_strategy(strategy: str, pairs: list[str], hist: dict, spine: list[int], 
         t = spine[i]
         context, total, prices = build_context(t, pairs, hist, sim, recent)
 
-        proposal = brain.analyst(context, strategy=strategy)
         pf_ctx = (
             f"Total portefølje: {total:.2f} USD. Rammer: maks {cfg['max_position_pct']}% per trade, "
             f"maks {cfg['max_trades_per_day']} trades/dag, tillatte par: {pairs}."
         )
-        verdict = brain.risk_officer(proposal, pf_ctx, strategy=strategy)
+        try:
+            proposal = brain.analyst(context, strategy=strategy)
+            verdict = brain.risk_officer(proposal, pf_ctx, strategy=strategy)
+        except Exception as e:  # noqa: BLE001 — én dårlig LLM-respons skal ikke drepe hele kjøringen
+            holds += 1
+            curve.append(sim.value(prices_by_base(prices)))
+            print(f"  [{strategy}] {n + 1}/{len(steps)}  hoppet over ({type(e).__name__})", flush=True)
+            continue
 
         action = proposal["action"]
         amount = proposal["amount_usd"]
