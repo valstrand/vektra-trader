@@ -27,6 +27,15 @@ CANDLE_TF = "4h"
 CANDLE_MS = 4 * 3600 * 1000
 
 
+class BacktestAborted(RuntimeError):
+    """Uopprettelig feil (tom konto, ugyldig nøkkel) — hele kjøringen stoppes."""
+
+
+def _is_fatal(e: Exception) -> bool:
+    msg = str(e).lower()
+    return any(s in msg for s in ("credit balance", "authentication", "invalid x-api-key", "permission"))
+
+
 def fetch_history(pairs: list[str], days: int) -> dict[str, list[list]]:
     """Hent 4h-candles for hvert par over [nå-(days+warmup), nå]."""
     span_ms = (days + WARMUP // 6 + 2) * 24 * 3600 * 1000
@@ -115,6 +124,7 @@ def run_strategy(strategy: str, pairs: list[str], hist: dict, spine: list[int], 
     recent: list[dict] = []
     curve: list[float] = []
     holds = 0
+    skipped = 0
     executed_at: list[int] = []  # timestamps for utførte trades (for dagskvote)
 
     steps = list(range(WARMUP, len(spine), step))
@@ -129,7 +139,12 @@ def run_strategy(strategy: str, pairs: list[str], hist: dict, spine: list[int], 
         try:
             proposal = brain.analyst(context, strategy=strategy)
             verdict = brain.risk_officer(proposal, pf_ctx, strategy=strategy)
-        except Exception as e:  # noqa: BLE001 — én dårlig LLM-respons skal ikke drepe hele kjøringen
+        except Exception as e:
+            if _is_fatal(e):
+                # Tom konto / auth-feil: meningsløst å fortsette — avbryt hele kjøringen
+                # heller enn å produsere en tabell full av "hold" som ser ekte ut.
+                raise BacktestAborted(str(e)) from e
+            skipped += 1
             holds += 1
             curve.append(sim.value(prices_by_base(prices)))
             print(f"  [{strategy}] {n + 1}/{len(steps)}  hoppet over ({type(e).__name__})", flush=True)
@@ -185,6 +200,7 @@ def run_strategy(strategy: str, pairs: list[str], hist: dict, spine: list[int], 
         "pnl_pct": (final - cash) / cash * 100,
         "trades": sim.trades,
         "steps": len(steps),
+        "skipped": skipped,
         "hold_pct": holds / len(steps) * 100 if steps else 0.0,
         "max_dd": max_dd,
     }
@@ -229,19 +245,31 @@ def main() -> None:
     }
 
     results = []
-    for s in strategies:
-        print(f"=== Strategi: {s} ===", flush=True)
-        results.append(run_strategy(s, pairs, hist, spine, step, cfg, args.cash, args.fee))
+    try:
+        for s in strategies:
+            print(f"=== Strategi: {s} ===", flush=True)
+            results.append(run_strategy(s, pairs, hist, spine, step, cfg, args.cash, args.fee))
+    except BacktestAborted as e:
+        print(f"\nAVBRUTT: {e}")
+        print("Uopprettelig API-feil (sannsynligvis tom Anthropic-konto). "
+              "Fyll på kreditt og kjør igjen.", flush=True)
+        sys.exit(1)
 
     results.sort(key=lambda r: r["final"], reverse=True)
-    print("\n" + "=" * 68)
+    valid = [r for r in results if r["skipped"] == 0]
+    print("\n" + "=" * 74)
     print(f"RESULTAT ({args.days}d, {n_steps} beslutninger, start {args.cash:.0f} USD, fee {args.fee*100:.1f}%)")
-    print("=" * 68)
-    print(f"{'STRATEGI':<14}{'SLUTT':>10}{'P&L':>9}{'TRADES':>8}{'MAKS-DD':>9}{'HOLD%':>7}")
+    print("=" * 74)
+    print(f"{'STRATEGI':<14}{'SLUTT':>10}{'P&L':>9}{'TRADES':>8}{'MAKS-DD':>9}{'HOLD%':>7}{'HOPPET':>8}")
     for r in results:
-        print(f"{r['strategy']:<14}{r['final']:>10.2f}{r['pnl_pct']:>8.2f}%{r['trades']:>8}{r['max_dd']:>8.1f}%{r['hold_pct']:>6.0f}%")
-    print("=" * 68)
-    print(f"Vinner: {results[0]['strategy']}  ({results[0]['pnl_pct']:+.2f}%)")
+        flag = "  ⚠ ugyldig" if r["skipped"] else ""
+        print(f"{r['strategy']:<14}{r['final']:>10.2f}{r['pnl_pct']:>8.2f}%{r['trades']:>8}"
+              f"{r['max_dd']:>8.1f}%{r['hold_pct']:>6.0f}%{r['skipped']:>8}{flag}")
+    print("=" * 74)
+    if valid:
+        print(f"Vinner (av gyldige): {valid[0]['strategy']}  ({valid[0]['pnl_pct']:+.2f}%)")
+    if len(valid) < len(results):
+        print("⚠ Rader med hoppede steg er ufullstendige — kjør dem på nytt for et gyldig resultat.")
 
 
 if __name__ == "__main__":
